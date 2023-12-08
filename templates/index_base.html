@@ -1,0 +1,97 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VAR_PAGETITLE</title>
+</head>
+
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+<body class="w3-container w3-grey">
+    <div class="w3-display-topmiddle w3-black w3-opacity w3-padding-large w3-round-large" style="width:40%">
+        <h1 class="w3-xxxlarge" style="text-align: center;">Generate Wireguard Config</h1>
+        <h2 class="w3-xxlarge" style="text-align: center;">VAR_NETWORKNAME</h2>
+        <form class="w3-container w3-center" id="fetchConfigForm">
+            <label class="w3-large" for="deviceName">Device Name</label>
+            <input class="w3-input" type="text" id="deviceName" name="deviceName" placeholder="Bob's Laptop" maxlength="32" style="text-align: center;" required><br>
+            <label class="w3-large" for="address">Assigned IP Address</label>
+            <p id="ip_invalid_error" style="color:red;" hidden="true">IP Address Invalid</p>
+            <input class="w3-input" type="text" id="address" name="address" placeholder="192.168.1.1/32" maxlength="18" style="text-align: center;" required><br>
+            <button type="button" onclick="getQRConfig()" class="w3-button w3-block w3-green w3-round">Generate</button>
+        </form>
+
+        <div class="w3-margin-top w3-margin-bottom" id="qrcode_container" style="text-align: center;"></div>
+
+        <div id="textConfig"></div>
+
+        <label class="w3-large w3-center" id="infoToSendInfo" hidden>Send the info below to your Administrator.</label>
+        <div id="infoToSend"></div>
+
+    </div>
+
+    <script>
+        async function getQRConfig() {
+            // Temporary fix `${url}generate and others like it
+            // will only work if the url already ends in a "/"
+            url = window.location.href;
+            if (!url.endsWith('/')) {
+                url += '/';
+            }
+            fetch(`${url}generate`, {
+                method: 'POST',
+                body: JSON.stringify(Object.fromEntries(new FormData(document.getElementById("fetchConfigForm")))),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById("ip_invalid_error").setAttribute('hidden', '')
+                    document.getElementById("qrcode_container").innerHTML = '';
+                    // Show generated QR Code
+                    const svgUnicodeString = data.qrcode;
+                    const tempContainerSVG = document.createElement('div');
+                    tempContainerSVG.innerHTML = svgUnicodeString;
+                    const svgElement = tempContainerSVG.firstChild;
+                    document.getElementById("qrcode_container").appendChild(svgElement);
+                    delete svgUnicodeString
+                    delete tempContainerSVG
+                    delete svgElement
+
+                    // Show text config
+                    document.getElementById("textConfig").innerHTML = '';
+                    const tempContainerConfigTextarea = document.createElement('div');
+                    tempContainerConfigTextarea.innerHTML = '<textarea class="w3-input" id="wgConfig" name="wgConfig" rows="15" cols="60" readonly>' + data.config + '</textarea>';
+                    const textareaConfigElement = tempContainerConfigTextarea.firstChild;
+                    document.getElementById("textConfig").appendChild(textareaConfigElement);
+                    delete tempContainerConfigTextarea
+                    delete textareaConfigElement
+
+                    // Show admin info
+                    document.getElementById("infoToSend").innerHTML = '';
+                    const tempContainerInfoTextarea = document.createElement('div');
+                    tempContainerInfoTextarea.innerHTML = '<textarea class="w3-input" id="adminInfo" name="adminInfo" rows="4" cols="60" readonly>' + data.info + '</textarea>';
+                    const textareaInfoElement = tempContainerInfoTextarea.firstChild;
+                    document.getElementById("infoToSend").appendChild(textareaInfoElement);
+                    document.getElementById("infoToSendInfo").removeAttribute('hidden');
+                    delete tempContainerInfoTextarea
+                    delete textareaInfoElement
+                } else {
+                    document.getElementById("ip_invalid_error").removeAttribute('hidden')
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            })
+
+        }
+    </script>
+</body>
+
+</html>

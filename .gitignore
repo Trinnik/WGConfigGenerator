@@ -1,0 +1,6 @@
+__pycache__
+.venv
+pyvenv.cfg
+*.yaml
+!config.example.yaml
+index.html
